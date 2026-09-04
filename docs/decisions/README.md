@@ -14,3 +14,4 @@ was traded away. Records are numbered in the order the decisions were made.
 | [006](006-nextjs-public-frontend.md) | Replace Streamlit as the public production UI | Accepted |
 | [007](007-stateless-inference.md) | Keep inference stateless | Accepted |
 | [008](008-lightweight-observability.md) | Use lightweight application observability | Accepted |
+| [009](009-container-packaging.md) | Package each service as its own container with the artifact baked in | Accepted |
