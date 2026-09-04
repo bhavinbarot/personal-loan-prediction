@@ -118,6 +118,17 @@ export interface DemoPopulationResponse {
   customers: CustomerRecord[];
 }
 
+export interface CustomerPreset {
+  id: string;
+  name: string;
+  features: CustomerFeatures;
+}
+
+export interface PresetsResponse {
+  note: string;
+  presets: CustomerPreset[];
+}
+
 export interface ModelSelectionRow {
   model: string;
   label: string;

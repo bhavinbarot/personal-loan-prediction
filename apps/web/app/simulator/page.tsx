@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { PageContainer, PageHeader } from "@/components/layout/page-shell";
+import { CustomerExplorer } from "@/components/customer/customer-explorer";
+import { PageContainer, PageHeader, Section } from "@/components/layout/page-shell";
 import { CampaignSimulator } from "@/components/simulator/campaign-simulator";
 import { ValidatedBenchmark } from "@/components/simulator/validated-benchmark";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,6 +26,15 @@ export default function SimulatorPage() {
           <ValidatedBenchmark />
         </Suspense>
       </div>
+      <Section
+        id="explore"
+        eyebrow="Secondary exploration"
+        title="Explore an individual customer"
+        description="Load a synthetic sample customer or adjust the attributes to see how the model scores one profile. Sample profiles were chosen by scoring a synthetic candidate pool with the model; their names reveal nothing about the outcome."
+        className="mt-4 border-t border-border"
+      >
+        <CustomerExplorer />
+      </Section>
     </PageContainer>
   );
 }

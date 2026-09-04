@@ -9,6 +9,7 @@ import type {
   MetadataResponse,
   MetricsResponse,
   PredictResponse,
+  PresetsResponse,
   ReadinessResponse,
 } from "./types";
 
@@ -49,4 +50,8 @@ export function rankCampaign(customers: CustomerRecord[], capacity: number, opti
 export function getDemoPopulation(size?: number, options?: CallOptions) {
   const query = size === undefined ? "" : `?size=${encodeURIComponent(size)}`;
   return apiRequest<DemoPopulationResponse>(`/demo/population${query}`, options);
+}
+
+export function getPresets(options?: CallOptions) {
+  return apiRequest<PresetsResponse>("/demo/presets", options);
 }
