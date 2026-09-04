@@ -6,6 +6,7 @@ import { CampaignPerformanceCharts } from "@/components/validation/campaign-perf
 import { CampaignPerformanceTable } from "@/components/validation/campaign-performance-table";
 import { ConfusionMatrix } from "@/components/validation/confusion-matrix";
 import { HoldoutPerformance } from "@/components/validation/holdout-performance";
+import { Methodology } from "@/components/validation/methodology";
 import { ModelComparisonChart } from "@/components/validation/model-comparison-chart";
 import { ModelComparisonTable } from "@/components/validation/model-comparison-table";
 import type { MetricsResponse } from "@/lib/api/types";
@@ -90,6 +91,15 @@ function ValidationSections({ metrics }: { metrics: MetricsResponse }) {
         <div className="mt-4">
           <CampaignPerformanceTable rows={metrics.campaign} totalResponders={metrics.dataset.holdout_responders} />
         </div>
+      </Section>
+
+      <Section
+        id="methodology"
+        eyebrow="Methodology"
+        title="How the evaluation stayed leakage-safe"
+        description="Every decision was made on the development split; the holdout set was scored exactly once."
+      >
+        <Methodology metrics={metrics} />
       </Section>
     </>
   );
