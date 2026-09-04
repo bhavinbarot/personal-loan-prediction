@@ -27,7 +27,7 @@ test-ml:
 
 ## Lint, typecheck, test, and build the web app.
 web-check:
-	cd apps/web && npm run lint && npm run typecheck && npm test -- --run && npm run build
+	cd apps/web && npm run lint && npm run typecheck && npm run test:run && npm run build
 
 ## Regenerate the local model artifact (requires the local training dataset).
 train:
