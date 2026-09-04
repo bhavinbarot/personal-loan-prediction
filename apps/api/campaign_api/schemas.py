@@ -147,8 +147,15 @@ class TopKPolicy(BaseModel):
     description: str
 
 
-class MetadataResponse(BaseModel):
-    service_version: str
+class ApplicationInfo(BaseModel):
+    name: str
+    version: str
+    git_commit: str | None
+    build_timestamp: str | None
+    schema_version: str
+
+
+class ModelInfo(BaseModel):
     model_type: str
     estimator_class: str
     artifact_version: str
@@ -159,6 +166,14 @@ class MetadataResponse(BaseModel):
     excluded_fields: list[str]
     threshold_policy: ThresholdPolicy
     top_k_policy: TopKPolicy
+
+
+class MetadataResponse(BaseModel):
+    """Safe operational metadata. Available even when the model is not loaded."""
+
+    application: ApplicationInfo
+    model_loaded: bool
+    model: ModelInfo | None
     feature_schema: list[FeatureDefinition]
 
 

@@ -31,27 +31,52 @@ def test_metadata_exposes_schema_and_policies_without_paths(client):
     body = response.json()
 
     assert response.status_code == 200
-    assert body["model_type"] == "random_forest"
-    assert body["estimator_class"] == "RandomForestClassifier"
-    assert body["expected_raw_input_fields"] == [
+    assert body["model_loaded"] is True
+    model = body["model"]
+    assert model["model_type"] == "random_forest"
+    assert model["estimator_class"] == "RandomForestClassifier"
+    assert model["expected_raw_input_fields"] == [
         "Age", "Experience", "Income", "CCAvg", "Mortgage", "Education", "Family",
         "Securities_Account", "CD_Account", "Online", "CreditCard",
     ]
-    assert set(body["excluded_fields"]) == {"ID", "ZIPCode", "Personal_Loan"}
-    assert body["threshold_policy"]["type"] == "probability_threshold"
-    assert 0 < body["threshold_policy"]["selected_threshold"] < 1
-    assert body["top_k_policy"]["selected_top_k_fraction"] == 0.1
-    assert {f["name"] for f in body["feature_schema"]} == set(body["expected_raw_input_fields"])
+    assert set(model["excluded_fields"]) == {"ID", "ZIPCode", "Personal_Loan"}
+    assert model["threshold_policy"]["type"] == "probability_threshold"
+    assert 0 < model["threshold_policy"]["selected_threshold"] < 1
+    assert model["top_k_policy"]["selected_top_k_fraction"] == 0.1
+    assert {f["name"] for f in body["feature_schema"]} == set(model["expected_raw_input_fields"])
     serialized = json.dumps(body)
     assert "/Users" not in serialized
     assert ".joblib" not in serialized
+    assert "Loan_Modelling" not in serialized
 
 
-def test_metadata_unavailable_without_model(unavailable_client):
+def test_metadata_reports_application_version_and_build(client, monkeypatch):
+    from campaign_api import build_info
+
+    monkeypatch.setenv("APP_GIT_COMMIT", "abc123def456")
+    monkeypatch.setenv("APP_BUILD_TIMESTAMP", "2026-09-04T12:00:00Z")
+    build_info.git_commit.cache_clear()
+
+    application = client.get("/metadata").json()["application"]
+
+    build_info.git_commit.cache_clear()
+    assert application["name"] == "campaign-api"
+    assert application["version"]
+    assert application["git_commit"] == "abc123def456"
+    assert application["build_timestamp"] == "2026-09-04T12:00:00Z"
+    assert application["schema_version"] == "1"
+    assert not any(key.lower().startswith(("env", "path", "host")) for key in application)
+
+
+def test_metadata_still_answers_without_model(unavailable_client):
     response = unavailable_client.get("/metadata")
+    body = response.json()
 
-    assert response.status_code == 503
-    assert response.json()["error"]["code"] == "MODEL_UNAVAILABLE"
+    assert response.status_code == 200
+    assert body["model_loaded"] is False
+    assert body["model"] is None
+    assert body["application"]["version"]
+    assert body["feature_schema"]
 
 
 def test_metrics_reflect_tracked_report_files(client):

@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from campaign_api import __version__
+from campaign_api.build_info import APPLICATION_NAME, SCHEMA_VERSION, build_timestamp, git_commit
 from campaign_api.config import (
     DEMO_POPULATION_DEFAULT,
     DEMO_POPULATION_MAX,
@@ -182,21 +183,34 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             content={"status": "not_ready", "model_loaded": False, "reason": model_service.load_error},
         )
 
-    @app.get("/metadata", response_model=MetadataResponse, responses=ERROR_RESPONSES, tags=["service"])
+    @app.get("/metadata", response_model=MetadataResponse, tags=["service"])
     async def metadata():
-        meta = model_service.metadata
+        """Version, build, and model facts that are safe to publish. No paths or environment values."""
+        model = None
+        if model_service.is_loaded:
+            meta = model_service.metadata
+            model = {
+                "model_type": meta["model_type"],
+                "estimator_class": meta["estimator_class"],
+                "artifact_version": meta["artifact_version"],
+                "sklearn_version": meta["sklearn_version"],
+                "model_selection_metric": meta["model_selection_metric"],
+                "trained_from_commit": meta.get("git_commit_sha"),
+                "expected_raw_input_fields": meta["expected_raw_input_fields"],
+                "excluded_fields": meta["excluded_fields"],
+                "threshold_policy": meta["threshold_policy"],
+                "top_k_policy": meta["top_k_policy"],
+            }
         return {
-            "service_version": __version__,
-            "model_type": meta["model_type"],
-            "estimator_class": meta["estimator_class"],
-            "artifact_version": meta["artifact_version"],
-            "sklearn_version": meta["sklearn_version"],
-            "model_selection_metric": meta["model_selection_metric"],
-            "trained_from_commit": meta.get("git_commit_sha"),
-            "expected_raw_input_fields": meta["expected_raw_input_fields"],
-            "excluded_fields": meta["excluded_fields"],
-            "threshold_policy": meta["threshold_policy"],
-            "top_k_policy": meta["top_k_policy"],
+            "application": {
+                "name": APPLICATION_NAME,
+                "version": __version__,
+                "git_commit": git_commit(),
+                "build_timestamp": build_timestamp(),
+                "schema_version": SCHEMA_VERSION,
+            },
+            "model_loaded": model_service.is_loaded,
+            "model": model,
             "feature_schema": FEATURE_SCHEMA,
         }
 
