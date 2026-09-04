@@ -23,7 +23,10 @@ export interface CampaignSimulation {
   setCapacity: (capacity: CapacityOption) => void;
   population: PopulationState;
   ranking: RankingState;
-  /** Latest successful ranking, kept on screen while a new capacity is being scored. */
+  /**
+   * Ranking to show: the current result, or the previous one while a new capacity is being
+   * scored. Cleared when the latest request fails so stale rankings are never shown as current.
+   */
   displayedResult: CampaignRankResponse | null;
   reloadPopulation: () => void;
   retryRanking: () => void;
@@ -92,7 +95,8 @@ export function useCampaignSimulation(initialCapacity: CapacityOption = DEFAULT_
       ? rankingOutcome.outcome
       : { status: "loading" };
 
-  const displayedResult = ranking.status === "ready" ? ranking.result : lastSuccess;
+  const displayedResult =
+    ranking.status === "ready" ? ranking.result : ranking.status === "loading" ? lastSuccess : null;
 
   const reloadPopulation = useCallback(() => setPopulationAttempt((n) => n + 1), []);
   const retryRanking = useCallback(() => setRankingAttempt((n) => n + 1), []);

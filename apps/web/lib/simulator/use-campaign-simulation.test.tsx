@@ -101,6 +101,23 @@ describe("useCampaignSimulation", () => {
     await waitFor(() => expect(result.current.ranking.status).toBe("ready"));
   });
 
+  it("clears a previously shown ranking when a new capacity request fails", async () => {
+    endpoints.getDemoPopulation.mockResolvedValue(population(20));
+    endpoints.rankCampaign
+      .mockResolvedValueOnce(ranking(0.1, 20))
+      .mockRejectedValueOnce(new ApiError("server", 500, "INTERNAL_ERROR", "boom", [], "req-1"));
+
+    const { result } = renderHook(() => useCampaignSimulation());
+    await waitFor(() => expect(result.current.ranking.status).toBe("ready"));
+    expect(result.current.displayedResult?.selected_count).toBe(2);
+
+    act(() => result.current.setCapacity(0.2));
+    await waitFor(() => expect(result.current.ranking.status).toBe("error"));
+
+    expect(result.current.displayedResult).toBeNull();
+    expect(result.current.capacity).toBe(0.2);
+  });
+
   it("reports ranking failures for the current capacity", async () => {
     endpoints.getDemoPopulation.mockResolvedValue(population(10));
     endpoints.rankCampaign.mockRejectedValue(new ApiError("model_unavailable", 503, "model_unavailable", "no model"));

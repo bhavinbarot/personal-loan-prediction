@@ -29,20 +29,16 @@ export function CampaignSimulator() {
         />
       </div>
 
-      {sim.ranking.status === "error" && !sim.displayedResult ? (
-        <ApiErrorState error={sim.ranking.error} onRetry={sim.retryRanking} />
-      ) : null}
+      {sim.ranking.status === "error" ? <ApiErrorState error={sim.ranking.error} onRetry={sim.retryRanking} /> : null}
 
-      {sim.population.status === "loading" ? (
-        <Skeleton className="h-72 rounded-2xl" aria-label="Loading synthetic population" />
+      {sim.population.status === "loading" || (sim.ranking.status === "loading" && !sim.displayedResult) ? (
+        <Skeleton className="h-80 rounded-2xl" aria-label="Scoring synthetic population" />
       ) : null}
 
       {sim.displayedResult ? (
         <div className="rounded-2xl border border-border bg-card p-4 sm:p-6">
           <RankingChart result={sim.displayedResult} pending={pending} />
         </div>
-      ) : sim.population.status === "ready" && sim.ranking.status === "loading" ? (
-        <Skeleton className="h-80 rounded-2xl" aria-label="Scoring synthetic population" />
       ) : null}
 
       {sim.displayedResult ? <CampaignShortlist result={sim.displayedResult} pending={pending} /> : null}
@@ -53,3 +49,4 @@ export function CampaignSimulator() {
     </div>
   );
 }
+
