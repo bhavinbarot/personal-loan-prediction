@@ -9,6 +9,7 @@ import pandas as pd
 from loan_modeling.predict import load_model, predict_batch, predict_one, select_campaign_top_k
 
 from campaign_api.errors import ModelUnavailableError
+from campaign_api.logging_config import Timer, log_event
 
 
 logger = logging.getLogger(__name__)
@@ -28,19 +29,30 @@ class ModelService:
         self.load_error: str | None = None
 
     def load(self) -> bool:
+        timer = Timer()
+        log_event(logger, "model_load_started")
         try:
             self._bundle = load_model(self.model_path)
             self.load_error = None
-            logger.info("Loaded model artifact (model_type=%s)", self.metadata.get("model_type"))
+            meta = self.metadata
+            log_event(
+                logger,
+                "model_loaded",
+                model_type=meta.get("model_type"),
+                artifact_version=meta.get("artifact_version"),
+                sklearn_version=meta.get("sklearn_version"),
+                duration_ms=timer.elapsed_ms(),
+            )
             return True
         except FileNotFoundError:
             self._bundle = None
             self.load_error = "artifact_missing"
-            logger.warning("Model artifact not found at configured path; prediction endpoints are unavailable.")
+            # The configured path is deliberately not logged or exposed.
+            log_event(logger, "model_load_failed", level=logging.WARNING, reason="artifact_missing")
         except Exception as exc:  # noqa: BLE001 - surface any artifact problem as unavailable
             self._bundle = None
-            self.load_error = f"artifact_invalid: {exc.__class__.__name__}"
-            logger.exception("Model artifact could not be loaded.")
+            self.load_error = "artifact_invalid"
+            log_event(logger, "model_load_failed", level=logging.ERROR, reason="artifact_invalid", error_type=exc.__class__.__name__)
         return False
 
     @property

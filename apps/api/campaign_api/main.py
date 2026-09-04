@@ -19,6 +19,7 @@ from campaign_api.config import (
 from campaign_api.demo_population import DEMO_NOTE, generate_population
 from campaign_api.errors import MODEL_UNAVAILABLE_MESSAGE, ModelUnavailableError, ReportsUnavailableError
 from campaign_api.feature_schema import FEATURE_SCHEMA
+from campaign_api.logging_config import configure_logging, log_event
 from campaign_api.model_service import ModelService
 from campaign_api.observability import RequestContextMiddleware
 from campaign_api.reports import load_validation_report
@@ -65,12 +66,15 @@ def _format_validation_details(exc: RequestValidationError) -> list[dict]:
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings()
+    configure_logging()
     model_service = ModelService(settings.model_path)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        log_event(logger, "application_started", cors_origins=len(settings.cors_origins))
         model_service.load()
         yield
+        log_event(logger, "application_shutdown")
 
     app = FastAPI(
         title="Personal Loan Campaign Intelligence API",
@@ -109,7 +113,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.exception_handler(ReportsUnavailableError)
     async def _reports_unavailable(_: Request, exc: ReportsUnavailableError):
-        logger.error("Validation reports unavailable: %s", exc)
+        log_event(logger, "reports_unavailable", level=logging.ERROR, error_type=exc.__class__.__name__)
         return _error(503, "reports_unavailable", "Validated report metrics are not available.")
 
     @app.exception_handler(ValueError)
@@ -122,8 +126,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return _error(exc.status_code, "http_error", str(exc.detail))
 
     @app.exception_handler(Exception)
-    async def _unhandled(_: Request, exc: Exception):
-        logger.exception("Unhandled error while processing request")
+    async def _unhandled(request: Request, exc: Exception):
+        event = "prediction_failed" if request.url.path.startswith("/predict") else (
+            "campaign_ranking_failed" if request.url.path.startswith("/campaign") else "request_failed"
+        )
+        # Log the failure type and route for diagnosis; never the request body.
+        logger.error(event, exc_info=exc, extra={"event": event, "route": request.url.path, "error_type": exc.__class__.__name__})
         return _error(500, "internal_error", "An unexpected error occurred.")
 
     # ---- routes ---------------------------------------------------------
