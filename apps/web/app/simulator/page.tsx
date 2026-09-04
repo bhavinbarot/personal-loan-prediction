@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { PageContainer, PageHeader } from "@/components/layout/page-shell";
-import { Skeleton } from "@/components/ui/skeleton";
+import { CampaignSimulator } from "@/components/simulator/campaign-simulator";
 
 export const metadata: Metadata = {
   title: "Campaign Simulator",
@@ -10,16 +10,13 @@ export const metadata: Metadata = {
 
 export default function SimulatorPage() {
   return (
-    <PageContainer>
+    <PageContainer className="pb-16">
       <PageHeader
         eyebrow="Live synthetic simulator"
         title="Campaign Simulator"
-        description="Score a synthetic population, choose how many customers the campaign can reach, and see who is prioritized."
+        description="Score a synthetic population, choose how many customers the campaign can reach, and see who is prioritized. Scores are model predictions, not observed outcomes."
       />
-      <div className="grid gap-4 pb-16 lg:grid-cols-3">
-        <Skeleton className="h-72 rounded-xl lg:col-span-2" />
-        <Skeleton className="h-72 rounded-xl" />
-      </div>
+      <CampaignSimulator />
     </PageContainer>
   );
 }
