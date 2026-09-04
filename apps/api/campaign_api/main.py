@@ -20,6 +20,7 @@ from campaign_api.demo_population import DEMO_NOTE, generate_population
 from campaign_api.errors import MODEL_UNAVAILABLE_MESSAGE, ModelUnavailableError, ReportsUnavailableError
 from campaign_api.feature_schema import FEATURE_SCHEMA
 from campaign_api.model_service import ModelService
+from campaign_api.observability import RequestContextMiddleware
 from campaign_api.reports import load_validation_report
 from campaign_api.schemas import (
     BatchPredictRequest,
@@ -86,6 +87,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     app.state.model_service = model_service
 
+    # Middleware runs in reverse registration order: CORS is outermost, then request context.
+    app.add_middleware(RequestContextMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=list(settings.cors_origins),
