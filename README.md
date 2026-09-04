@@ -1,8 +1,33 @@
-# Personal Loan Campaign Targeting
+# Personal Loan Campaign Intelligence
 
-Applied ML project for loan campaign targeting with reproducible pipelines, leakage-safe evaluation, cross-validation, and business-focused campaign metrics.
+A campaign prioritization system for a bank marketing team: when outreach capacity is limited, which existing customers should be contacted first? The project takes a validated machine-learning model through a reusable Python package, an inference API, and a responsive product interface.
 
-This project models whether an existing bank customer is likely to accept a personal loan offer, so a marketing team can prioritize outreach toward the highest-scoring customers. It is a campaign response model, not a credit underwriting or loan approval system.
+It is a campaign response model, not a credit underwriting, eligibility, or loan approval system.
+
+```text
+Browser -> Next.js (apps/web) -> FastAPI (apps/api) -> loan_modeling (src/) -> sklearn pipeline -> model artifact
+```
+
+- **Overview**: the business problem, the validated result, and how the system works.
+- **Campaign Simulator**: rank a synthetic population, apply a capacity, inspect the shortlist, and explore one customer.
+- **Technical Validation**: model comparison, untouched holdout performance, campaign metrics, methodology, and service status.
+
+## Run it locally
+
+Prerequisites: Python 3.11+, Node 20+, and a local model artifact (see [Train Model Artifact](#train-model-artifact)).
+
+```bash
+pip install -r requirements.txt
+cd apps/web && npm install && cd ../..
+
+# Terminal 1: API on http://localhost:8000
+make api
+
+# Terminal 2: web app on http://localhost:3000
+make web
+```
+
+`apps/web/.env.example` documents `NEXT_PUBLIC_API_BASE_URL` (default `http://localhost:8000`) and the optional server-side `API_BASE_URL`. `apps/api/.env.example` documents the API's `CORS_ALLOWED_ORIGINS`, `LOAN_MODEL_PATH`, `LOAN_REPORTS_DIR`, and logging/build variables. Without the model artifact the API still starts, reports `not_ready`, and the web app shows explicit unavailable states.
 
 ## Current Result
 
@@ -93,6 +118,14 @@ src/
 apps/
   api/
     campaign_api/        FastAPI inference service
+    scripts/             preset selection (scores a synthetic pool with the model)
+  web/
+    app/                 Next.js App Router pages: /, /simulator, /validation
+    components/          layout, overview, simulator, customer, validation, feedback, ui
+    lib/                 typed API client, formatting, simulator and form logic
+docs/
+  decisions/             architecture decision records
+  operations.md          probes, logs, request IDs, failure scenarios
 app/
   streamlit_app.py       historical Streamlit prototype
 tests/
@@ -238,6 +271,16 @@ PYTHONPATH=src streamlit run app/streamlit_app.py
 
 The demo uses synthetic customer profiles and manual feature entry. It does not require the original dataset at runtime once `artifacts/model.joblib` exists.
 
+## Web Application
+
+`apps/web` is a mobile-first Next.js 16 application (App Router, TypeScript, Tailwind CSS v4, shadcn/ui, Recharts) with application-controlled light, dark, and system themes. Report-backed pages render server-side from the API's `/metrics` endpoint; the simulator and customer explorer call the API from the browser through a typed client that maps the error contract to loading, validation, unavailable, and retry states. No ML logic runs in JavaScript.
+
+```bash
+cd apps/web
+npm run lint && npm run typecheck && npm run test:run && npm run build
+# or, from the repository root: make web-check
+```
+
 ## Testing
 
 ```bash
@@ -245,7 +288,7 @@ python3 -m pytest -q
 # or: make test
 ```
 
-`pytest.ini` puts `src` and `apps/api` on the import path, so no `PYTHONPATH` is needed.
+`pytest.ini` puts `src` and `apps/api` on the import path, so no `PYTHONPATH` is needed. Frontend tests run with `npm run test:run` in `apps/web`.
 
 The suite covers preprocessing, feature leakage boundaries, campaign metrics, exact top-K behavior, model pipeline contracts, artifact save/load, schema validation, single/batch inference, and the HTTP API (health, metadata, metrics, prediction, batch prediction, campaign ranking, capacity validation, and model-unavailable behavior). API tests train a small artifact from synthetic data and never read the course CSV.
 
