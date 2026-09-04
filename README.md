@@ -185,6 +185,16 @@ print(prediction)
 
 The result contains `predicted_probability` and `threshold_prediction`. Batch scoring is available through `predict_batch`. Fixed-capacity campaign selection is available through `select_campaign_top_k`.
 
+## Interactive Demo
+
+After training the local model artifact, launch the Streamlit demo:
+
+```bash
+PYTHONPATH=src streamlit run app/streamlit_app.py
+```
+
+The demo uses synthetic customer profiles and manual feature entry. It does not require the original dataset at runtime once `artifacts/model.joblib` exists.
+
 ## Testing
 
 ```bash
