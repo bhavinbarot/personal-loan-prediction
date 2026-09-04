@@ -70,12 +70,14 @@ def test_logs_never_contain_inference_payloads(client, caplog):
     import logging
 
     caplog.set_level(logging.DEBUG)
-    client.post("/predict", json={"features": valid_features(Income=987.65, CCAvg=6.54)})
+    # Values with three decimals cannot collide with duration_ms, which is rounded to two.
+    client.post("/predict", json={"features": valid_features(Income=987.654, CCAvg=6.543)})
 
     text = "\n".join(caplog.messages) + "\n".join(str(r.__dict__) for r in caplog.records)
-    assert "987.65" not in text
-    assert "6.54" not in text
+    assert "987.654" not in text
+    assert "6.543" not in text
     assert "CCAvg" not in text
+    assert "Income" not in text
 
 
 def test_json_formatter_emits_structured_fields():
