@@ -5,18 +5,25 @@ from campaign_api.config import PROJECT_ROOT
 from .conftest import valid_features
 
 
-def test_health_reports_loaded_model(client):
-    response = client.get("/health")
+def test_health_reports_liveness_regardless_of_model(client, unavailable_client):
+    assert client.get("/health").json() == {"status": "healthy"}
+    assert unavailable_client.get("/health").status_code == 200
+    assert unavailable_client.get("/health").json() == {"status": "healthy"}
+
+
+def test_ready_reports_model_loaded(client):
+    response = client.get("/ready")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "model_loaded": True}
+    assert response.json() == {"status": "ready", "model_loaded": True, "reason": None}
 
 
-def test_health_degrades_when_artifact_missing(unavailable_client):
-    response = unavailable_client.get("/health")
+def test_ready_reports_model_unavailable_with_503(unavailable_client):
+    response = unavailable_client.get("/ready")
 
-    assert response.status_code == 200
-    assert response.json() == {"status": "degraded", "model_loaded": False}
+    assert response.status_code == 503
+    assert response.json() == {"status": "not_ready", "model_loaded": False, "reason": "artifact_missing"}
+    assert "/" not in response.json()["reason"]
 
 
 def test_metadata_exposes_schema_and_policies_without_paths(client):

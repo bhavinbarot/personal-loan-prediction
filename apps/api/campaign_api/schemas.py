@@ -113,8 +113,17 @@ class CampaignRankResponse(BaseModel):
 
 
 class HealthResponse(BaseModel):
-    status: Literal["ok", "degraded"]
+    """Liveness: the process is up and serving HTTP."""
+
+    status: Literal["healthy"]
+
+
+class ReadinessResponse(BaseModel):
+    """Readiness: the service can actually perform inference."""
+
+    status: Literal["ready", "not_ready"]
     model_loaded: bool
+    reason: str | None = None
 
 
 class FeatureDefinition(BaseModel):

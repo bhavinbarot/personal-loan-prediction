@@ -35,6 +35,7 @@ from campaign_api.schemas import (
     MetadataResponse,
     PredictRequest,
     PredictResponse,
+    ReadinessResponse,
 )
 
 
@@ -163,8 +164,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/health", response_model=HealthResponse, tags=["service"])
     async def health():
-        loaded = model_service.is_loaded
-        return {"status": "ok" if loaded else "degraded", "model_loaded": loaded}
+        """Liveness probe: answers "is the API process alive?" and never depends on the model."""
+        return {"status": "healthy"}
+
+    @app.get(
+        "/ready",
+        response_model=ReadinessResponse,
+        responses={503: {"model": ReadinessResponse, "description": "Model not loaded"}},
+        tags=["service"],
+    )
+    async def ready():
+        """Readiness probe: answers "can this service perform inference right now?"."""
+        if model_service.is_loaded:
+            return {"status": "ready", "model_loaded": True, "reason": None}
+        return JSONResponse(
+            status_code=503,
+            content={"status": "not_ready", "model_loaded": False, "reason": model_service.load_error},
+        )
 
     @app.get("/metadata", response_model=MetadataResponse, responses=ERROR_RESPONSES, tags=["service"])
     async def metadata():
