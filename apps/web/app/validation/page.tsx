@@ -1,14 +1,18 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { RefreshButton } from "@/components/feedback/refresh-button";
 import { PageContainer, PageHeader, Section } from "@/components/layout/page-shell";
 import { CampaignPerformanceCharts } from "@/components/validation/campaign-performance-chart";
 import { CampaignPerformanceTable } from "@/components/validation/campaign-performance-table";
 import { ConfusionMatrix } from "@/components/validation/confusion-matrix";
+import { EngineeringSummary } from "@/components/validation/engineering-summary";
 import { HoldoutPerformance } from "@/components/validation/holdout-performance";
 import { Methodology } from "@/components/validation/methodology";
 import { ModelComparisonChart } from "@/components/validation/model-comparison-chart";
 import { ModelComparisonTable } from "@/components/validation/model-comparison-table";
+import { SystemStatus } from "@/components/validation/system-status";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { MetricsResponse } from "@/lib/api/types";
 import { loadMetrics } from "@/lib/server/metrics";
 
@@ -100,6 +104,21 @@ function ValidationSections({ metrics }: { metrics: MetricsResponse }) {
         description="Every decision was made on the development split; the holdout set was scored exactly once."
       >
         <Methodology metrics={metrics} />
+      </Section>
+
+      <Section
+        id="engineering"
+        eyebrow="Engineering"
+        title="Tests and engineering practices"
+        description="Verified facts about how the system is built and checked."
+      >
+        <EngineeringSummary />
+      </Section>
+
+      <Section id="system" eyebrow="System" title="Service status" description="What is currently running behind this page." headingLevel={2}>
+        <Suspense fallback={<Skeleton className="h-16 rounded-lg" />}>
+          <SystemStatus />
+        </Suspense>
       </Section>
     </>
   );

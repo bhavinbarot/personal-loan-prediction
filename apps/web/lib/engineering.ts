@@ -7,10 +7,10 @@
  * Update these numbers whenever tests are added or removed.
  */
 export const engineeringFacts = {
-  pythonTests: 66,
+  pythonTests: 90,
   mlPackageTests: 39,
-  apiTests: 27,
-  frontendTests: 16,
+  apiTests: 51,
+  frontendTests: 44,
   cvFolds: 5,
   holdoutFraction: 0.2,
   ciConfigured: false,
