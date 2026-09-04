@@ -1,8 +1,9 @@
 "use client";
 
-import { AlertTriangleIcon, PlugZapIcon, RefreshCwIcon, ServerOffIcon } from "lucide-react";
+import { AlertTriangleIcon, ChevronDownIcon, PlugZapIcon, RefreshCwIcon, ServerOffIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { describeError } from "@/lib/api/errors";
 import { cn } from "cn";
 
@@ -24,6 +25,8 @@ export function ApiErrorState({
       : presentation.kind === "model_unavailable"
         ? ServerOffIcon
         : AlertTriangleIcon;
+  const { technical } = presentation;
+  const hasTechnical = Boolean(technical.code || technical.requestId || technical.status);
 
   return (
     <div
@@ -51,11 +54,48 @@ export function ApiErrorState({
           </ul>
         ) : null}
       </div>
-      {onRetry && presentation.retryable ? (
-        <Button variant="outline" size="sm" onClick={onRetry}>
-          <RefreshCwIcon data-icon="inline-start" aria-hidden />
-          Try again
-        </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        {onRetry && presentation.retryable ? (
+          <Button variant="outline" size="sm" onClick={onRetry}>
+            <RefreshCwIcon data-icon="inline-start" aria-hidden />
+            Try again
+          </Button>
+        ) : null}
+      </div>
+      {hasTechnical ? (
+        <Collapsible className="w-full">
+          <CollapsibleTrigger
+            render={<Button variant="ghost" size="xs" className="group -ml-2 text-muted-foreground" />}
+          >
+            Technical details
+            <ChevronDownIcon data-icon="inline-end" className="transition-transform group-aria-expanded:rotate-180" aria-hidden />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              {technical.code ? (
+                <>
+                  <dt>Error code</dt>
+                  <dd className="font-mono text-foreground">{technical.code}</dd>
+                </>
+              ) : null}
+              {technical.status ? (
+                <>
+                  <dt>HTTP status</dt>
+                  <dd className="font-mono text-foreground">{technical.status}</dd>
+                </>
+              ) : null}
+              {technical.requestId ? (
+                <>
+                  <dt>Request ID</dt>
+                  <dd className="font-mono break-all text-foreground">{technical.requestId}</dd>
+                </>
+              ) : null}
+            </dl>
+            {technical.requestId ? (
+              <p className="mt-1.5 text-xs text-muted-foreground">Quote the request ID when reporting this problem.</p>
+            ) : null}
+          </CollapsibleContent>
+        </Collapsible>
       ) : null}
     </div>
   );
