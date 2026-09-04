@@ -115,11 +115,14 @@ src/
     predict.py
     preprocessing.py
     train.py
+docker-compose.yml       local production-like environment
 apps/
   api/
+    Dockerfile           API production image
     campaign_api/        FastAPI inference service
     scripts/             preset selection (scores a synthetic pool with the model)
   web/
+    Dockerfile           web production image
     app/                 Next.js App Router pages: /, /simulator, /validation
     components/          layout, overview, simulator, customer, validation, feedback, ui
     lib/                 typed API client, formatting, simulator and form logic
@@ -258,6 +261,7 @@ Configuration (see `apps/api/.env.example`): `LOAN_MODEL_PATH`, `LOAN_REPORTS_DI
 - Consistent client-safe error contract; no tracebacks or filesystem paths leave the service
 - Frontend states for service unavailable, model not loaded, validation feedback, loading, and retry
 - Automated backend and frontend tests including failure paths
+- Production containers that run as non-root users with liveness health checks; compose gates the web service on API readiness
 
 Details: [docs/operations.md](docs/operations.md). Design rationale: [docs/decisions/](docs/decisions/).
 
@@ -270,6 +274,22 @@ PYTHONPATH=src streamlit run app/streamlit_app.py
 ```
 
 The demo uses synthetic customer profiles and manual feature entry. It does not require the original dataset at runtime once `artifacts/model.joblib` exists.
+
+## Run with Containers
+
+Both services have production images, and a compose file runs them together. The API image needs the local model artifact (`make train`) because the artifact is not tracked.
+
+```bash
+make train                    # once
+docker compose up --build     # web on http://localhost:3000, API on http://localhost:8000
+```
+
+`docker-compose.yml` documents the overridable variables: `NEXT_PUBLIC_API_BASE_URL` (baked into the browser bundle at build time), `WEB_ORIGIN` (allowed CORS origin), `API_PORT`, `WEB_PORT`, `LOG_LEVEL`, and `APP_GIT_COMMIT` / `APP_BUILD_TIMESTAMP` for release provenance. The web service waits for the API's `/ready` check, so it only starts once the model is loaded. Individual images:
+
+```bash
+docker build -f apps/api/Dockerfile -t campaign-api .
+docker build -t campaign-web --build-arg NEXT_PUBLIC_API_BASE_URL=http://localhost:8000 apps/web
+```
 
 ## Web Application
 

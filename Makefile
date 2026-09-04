@@ -3,7 +3,7 @@
 PYTHONPATH_API := src:apps/api
 API_PORT ?= 8000
 
-.PHONY: api web test test-api test-ml web-check train
+.PHONY: api web test test-api test-ml web-check train compose-up compose-down
 
 ## Run the FastAPI inference service with auto-reload (Terminal 1).
 api:
@@ -32,3 +32,11 @@ web-check:
 ## Regenerate the local model artifact (requires the local training dataset).
 train:
 	PYTHONPATH=src python3 -m loan_modeling.train
+
+## Build and run both services in containers (requires the local model artifact).
+compose-up:
+	APP_GIT_COMMIT=$$(git rev-parse --short=12 HEAD) APP_BUILD_TIMESTAMP=$$(date -u +%Y-%m-%dT%H:%M:%SZ) docker compose up --build
+
+## Stop the compose environment.
+compose-down:
+	docker compose down --remove-orphans

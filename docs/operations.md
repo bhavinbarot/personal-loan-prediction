@@ -13,6 +13,20 @@ No secrets or private infrastructure addresses belong in this file.
 
 Use `/health` for restart decisions and `/ready` for routing traffic.
 
+## Containers
+
+| Image | Built from | Listens | Health check | Runs as |
+| --- | --- | --- | --- | --- |
+| `campaign-api` (`apps/api/Dockerfile`) | repository root | 8000 | `GET /health` every 30s (liveness) | `app` (non-root) |
+| `campaign-web` (`apps/web/Dockerfile`) | `apps/web` | 3000 | `GET /` every 30s | `app` (non-root) |
+
+`docker-compose.yml` additionally gates the web service on the API's `/ready`
+endpoint (readiness), so a missing or broken artifact keeps the web container from
+starting and shows up as `api` stuck in `starting`/`unhealthy` in `docker compose ps`.
+Pass `APP_GIT_COMMIT` and `APP_BUILD_TIMESTAMP` at build time; both appear in
+`/metadata`. Container logs are the structured JSON lines described below; read them
+with `docker compose logs api`.
+
 ## Identifying the deployed version
 
 `GET /metadata` returns:
