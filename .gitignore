@@ -8,6 +8,7 @@ AIML_ML_Project_Full_Code_Notebook.ipynb
 AIML_ML_Project_Full_Code_Notebook_Bhavin_Barot_Solution.ipynb
 
 # Generated model binaries. Commit only after explicit model-packaging review.
+artifacts/
 *.joblib
 *.pkl
 *.pickle
