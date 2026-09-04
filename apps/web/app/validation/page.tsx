@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 
 import { RefreshButton } from "@/components/feedback/refresh-button";
 import { PageContainer, PageHeader, Section } from "@/components/layout/page-shell";
+import { ConfusionMatrix } from "@/components/validation/confusion-matrix";
+import { HoldoutPerformance } from "@/components/validation/holdout-performance";
 import { ModelComparisonChart } from "@/components/validation/model-comparison-chart";
 import { ModelComparisonTable } from "@/components/validation/model-comparison-table";
 import type { MetricsResponse } from "@/lib/api/types";
@@ -56,6 +58,24 @@ function ValidationSections({ metrics }: { metrics: MetricsResponse }) {
             <ModelComparisonTable rows={metrics.model_selection} />
           </div>
         </div>
+      </Section>
+
+      <Section
+        id="holdout"
+        eyebrow="Holdout performance"
+        title="One scoring pass on untouched data"
+        description="Ranking quality first; threshold-dependent metrics second."
+      >
+        <HoldoutPerformance metrics={metrics} />
+      </Section>
+
+      <Section
+        id="confusion"
+        eyebrow="Threshold outcomes"
+        title="What the operating threshold would have done"
+        description="Holdout outcomes translated into campaign terms."
+      >
+        <ConfusionMatrix metrics={metrics} />
       </Section>
     </>
   );
