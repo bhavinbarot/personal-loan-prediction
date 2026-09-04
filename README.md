@@ -90,11 +90,18 @@ src/
     predict.py
     preprocessing.py
     train.py
+apps/
+  api/
+    campaign_api/        FastAPI inference service
+app/
+  streamlit_app.py       historical Streamlit prototype
 tests/
   test_metrics.py
   test_models.py
   test_preprocessing.py
   test_train_predict.py
+  test_streamlit_app.py
+  api/                   API tests
 ```
 
 Original course notebooks and the original CSV are retained locally but intentionally excluded from Git.
@@ -185,9 +192,32 @@ print(prediction)
 
 The result contains `predicted_probability` and `threshold_prediction`. Batch scoring is available through `predict_batch`. Fixed-capacity campaign selection is available through `select_campaign_top_k`.
 
-## Interactive Demo
+## Inference API
 
-After training the local model artifact, launch the Streamlit demo:
+A FastAPI service in `apps/api/` exposes the validated pipeline over HTTP. It reuses `loan_modeling.predict` for schema validation, scoring, and exact top-K campaign selection; no ML logic lives in the API layer.
+
+```bash
+PYTHONPATH=src:apps/api python3 -m uvicorn campaign_api.main:app --reload --port 8000
+# or: make api
+```
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /health` | Readiness and whether the model artifact is loaded |
+| `GET /metadata` | Model type, expected input schema, threshold and top-K policies |
+| `GET /metrics` | Validated metrics read from the tracked `reports/` files |
+| `POST /predict` | Score one customer: response probability and outreach priority |
+| `POST /predict/batch` | Score many customers |
+| `POST /campaign/rank` | Exact top-K ranking for a given campaign capacity |
+| `GET /demo/population` | Deterministic synthetic customers for the public demo |
+
+Errors are returned as structured JSON (`{"error": {"code", "message", "details"}}`) without tracebacks. If the artifact is missing the service starts in a degraded state and prediction endpoints return `503` with the command needed to generate it.
+
+Configuration (see `apps/api/.env.example`): `LOAN_MODEL_PATH`, `LOAN_REPORTS_DIR`, `CORS_ALLOWED_ORIGINS`.
+
+## Streamlit Prototype
+
+The original Streamlit prototype is retained as a historical UI exploration and is not part of the production runtime. After training the local model artifact:
 
 ```bash
 PYTHONPATH=src streamlit run app/streamlit_app.py
@@ -198,12 +228,13 @@ The demo uses synthetic customer profiles and manual feature entry. It does not 
 ## Testing
 
 ```bash
-PYTHONPATH=src pytest -q
+python3 -m pytest -q
+# or: make test
 ```
 
-Current status: 33 tests passing.
+`pytest.ini` puts `src` and `apps/api` on the import path, so no `PYTHONPATH` is needed.
 
-The test suite covers preprocessing, feature leakage boundaries, campaign metrics, exact top-K behavior, model pipeline contracts, artifact save/load, schema validation, and single/batch inference.
+The suite covers preprocessing, feature leakage boundaries, campaign metrics, exact top-K behavior, model pipeline contracts, artifact save/load, schema validation, single/batch inference, and the HTTP API (health, metadata, metrics, prediction, batch prediction, campaign ranking, capacity validation, and model-unavailable behavior). API tests train a small artifact from synthetic data and never read the course CSV.
 
 ## Limitations
 
