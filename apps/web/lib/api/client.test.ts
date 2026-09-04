@@ -72,9 +72,10 @@ describe("apiRequest", () => {
         jsonResponse(
           {
             error: {
-              code: "validation_error",
+              code: "VALIDATION_ERROR",
               message: "Request did not match the expected schema.",
               details: [{ field: "features.Education", message: "Education must be 1, 2, or 3." }],
+              request_id: "req-42",
             },
           },
           422,
@@ -87,14 +88,17 @@ describe("apiRequest", () => {
     expect(error.kind).toBe("validation");
     expect(error.status).toBe(422);
     expect(error.details[0].field).toBe("features.Education");
-    expect(describeError(error).details).toHaveLength(1);
+    expect(error.requestId).toBe("req-42");
+    const presentation = describeError(error);
+    expect(presentation.details).toHaveLength(1);
+    expect(presentation.technical).toEqual({ code: "VALIDATION_ERROR", status: 422, requestId: "req-42" });
   });
 
   it("maps model_unavailable responses to a dedicated error kind", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
-        jsonResponse({ error: { code: "model_unavailable", message: "artifact missing", details: [] } }, 503),
+        jsonResponse({ error: { code: "MODEL_UNAVAILABLE", message: "artifact missing", details: [] } }, 503),
       ),
     );
 
@@ -122,8 +126,37 @@ describe("apiRequest", () => {
     const error = await captureError(apiRequest("/metrics"));
 
     expect(error.kind).toBe("server");
-    expect(error.code).toBe("http_500");
+    expect(error.code).toBe("HTTP_500");
     expect(describeError(error).description).not.toMatch(/Traceback/);
+  });
+
+  it("falls back to the X-Request-ID header when the error body has no request id", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ error: { code: "INTERNAL_ERROR", message: "boom", details: [] } }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", "X-Request-ID": "hdr-77" },
+        }),
+      ),
+    );
+
+    const error = await captureError(apiRequest("/predict"));
+
+    expect(error.requestId).toBe("hdr-77");
+  });
+
+  it("names invalid campaign capacity errors explicitly", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse({ error: { code: "INVALID_CAMPAIGN_CAPACITY", message: "Capacity must be between 0 and 1.", details: [{ field: "capacity", message: "too big" }] } }, 422),
+      ),
+    );
+
+    const error = await captureError(apiRequest("/campaign/rank", { method: "POST", body: {} }));
+
+    expect(describeError(error).title).toMatch(/capacity/i);
   });
 
   it("describes unknown errors without exposing internals", () => {

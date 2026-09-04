@@ -9,12 +9,17 @@ import type {
   MetadataResponse,
   MetricsResponse,
   PredictResponse,
+  ReadinessResponse,
 } from "./types";
 
 type CallOptions = Pick<RequestOptions, "signal" | "cache" | "next" | "timeoutMs">;
 
 export function getHealth(options?: CallOptions) {
   return apiRequest<HealthResponse>("/health", options);
+}
+
+export function getReadiness(options?: CallOptions) {
+  return apiRequest<ReadinessResponse>("/ready", options);
 }
 
 export function getMetadata(options?: CallOptions) {

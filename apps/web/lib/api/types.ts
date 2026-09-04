@@ -25,8 +25,13 @@ export interface CustomerRecord {
 }
 
 export interface HealthResponse {
-  status: "ok" | "degraded";
+  status: "healthy";
+}
+
+export interface ReadinessResponse {
+  status: "ready" | "not_ready";
   model_loaded: boolean;
+  reason: string | null;
 }
 
 export interface FeatureOption {
@@ -44,8 +49,15 @@ export interface FeatureDefinition {
   options: FeatureOption[] | null;
 }
 
-export interface MetadataResponse {
-  service_version: string;
+export interface ApplicationInfo {
+  name: string;
+  version: string;
+  git_commit: string | null;
+  build_timestamp: string | null;
+  schema_version: string;
+}
+
+export interface ModelInfo {
   model_type: string;
   estimator_class: string;
   artifact_version: string;
@@ -56,6 +68,12 @@ export interface MetadataResponse {
   excluded_fields: string[];
   threshold_policy: { type: string; selected_threshold: number; description: string };
   top_k_policy: { selected_top_k_fraction: number; description: string };
+}
+
+export interface MetadataResponse {
+  application: ApplicationInfo;
+  model_loaded: boolean;
+  model: ModelInfo | null;
   feature_schema: FeatureDefinition[];
 }
 
@@ -182,6 +200,14 @@ export interface ApiErrorDetail {
   message: string;
 }
 
+export type ApiErrorCode =
+  | "VALIDATION_ERROR"
+  | "INVALID_CAMPAIGN_CAPACITY"
+  | "MODEL_UNAVAILABLE"
+  | "REPORTS_UNAVAILABLE"
+  | "INTERNAL_ERROR"
+  | (string & {});
+
 export interface ApiErrorBody {
-  error: { code: string; message: string; details: ApiErrorDetail[] };
+  error: { code: ApiErrorCode; message: string; details: ApiErrorDetail[]; request_id?: string };
 }

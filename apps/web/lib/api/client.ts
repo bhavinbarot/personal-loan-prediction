@@ -14,8 +14,11 @@ export interface RequestOptions {
 
 const DEFAULT_TIMEOUT_MS = 15_000;
 
+const REQUEST_ID_HEADER = "X-Request-ID";
+
 function kindForStatus(status: number, code: string): ApiErrorKind {
-  if (status === 503 && code === "model_unavailable") return "model_unavailable";
+  if (code === "MODEL_UNAVAILABLE") return "model_unavailable";
+  if (code === "REPORTS_UNAVAILABLE") return "reports_unavailable";
   if (status === 422 || status === 400) return "validation";
   return "server";
 }
@@ -24,7 +27,12 @@ async function parseErrorBody(response: Response): Promise<ApiErrorBody["error"]
   try {
     const body = (await response.json()) as Partial<ApiErrorBody>;
     if (body && body.error && typeof body.error.message === "string") {
-      return { code: body.error.code ?? "unknown", message: body.error.message, details: body.error.details ?? [] };
+      return {
+        code: body.error.code ?? "UNKNOWN",
+        message: body.error.message,
+        details: body.error.details ?? [],
+        request_id: body.error.request_id,
+      };
     }
   } catch {
     // Non-JSON error body; fall through to a generic error.
@@ -71,9 +79,10 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   if (!response.ok) {
     const parsed = await parseErrorBody(response);
-    const code = parsed?.code ?? `http_${response.status}`;
+    const code = parsed?.code ?? `HTTP_${response.status}`;
     const message = parsed?.message ?? `The model API responded with status ${response.status}.`;
-    throw new ApiError(kindForStatus(response.status, code), response.status, code, message, parsed?.details ?? []);
+    const requestId = parsed?.request_id ?? response.headers.get(REQUEST_ID_HEADER);
+    throw new ApiError(kindForStatus(response.status, code), response.status, code, message, parsed?.details ?? [], requestId);
   }
 
   return (await response.json()) as T;
