@@ -6,6 +6,7 @@ import { CapacityControl } from "@/components/simulator/capacity-control";
 import { RankingChart } from "@/components/simulator/ranking-chart";
 import { SimulationSummary } from "@/components/simulator/simulation-summary";
 import { Skeleton } from "@/components/ui/skeleton";
+import { POPULATION_SIZE } from "@/lib/simulator/capacity";
 import { useCampaignSimulation } from "@/lib/simulator/use-campaign-simulation";
 
 export function CampaignSimulator() {
@@ -32,7 +33,7 @@ export function CampaignSimulator() {
       {sim.ranking.status === "error" ? <ApiErrorState error={sim.ranking.error} onRetry={sim.retryRanking} /> : null}
 
       {sim.population.status === "loading" || (sim.ranking.status === "loading" && !sim.displayedResult) ? (
-        <Skeleton className="h-80 rounded-2xl" aria-label="Scoring synthetic population" />
+        <ScoringState stage={sim.population.status === "loading" ? "population" : "ranking"} />
       ) : null}
 
       {sim.displayedResult ? (
@@ -50,3 +51,22 @@ export function CampaignSimulator() {
   );
 }
 
+/** First-run state: tells the visitor what is happening instead of showing an anonymous skeleton. */
+function ScoringState({ stage }: { stage: "population" | "ranking" }) {
+  return (
+    <div role="status" aria-live="polite" className="rounded-2xl border border-border bg-card p-4 sm:p-6">
+      <p className="text-sm font-medium">
+        {stage === "population"
+          ? `Preparing ${POPULATION_SIZE} synthetic customers`
+          : `Scoring ${POPULATION_SIZE} synthetic customers with the campaign model`}
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        The ranking chart and shortlist will appear here in a moment.
+      </p>
+      <div className="mt-4 space-y-2" aria-hidden>
+        <Skeleton className="h-56 rounded-xl sm:h-64" />
+        <Skeleton className="h-4 w-2/3" />
+      </div>
+    </div>
+  );
+}
