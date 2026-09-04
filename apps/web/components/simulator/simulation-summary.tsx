@@ -15,7 +15,7 @@ export function SimulationSummary({
   pending: boolean;
 }) {
   return (
-    <dl className="grid grid-cols-3 gap-2 sm:gap-4">
+    <div className="grid grid-cols-3 gap-2 sm:gap-4" role="group" aria-label="Simulation summary">
       <KpiCard
         label="Population"
         value={populationSize === null ? <Skeleton className="h-8 w-16" /> : formatCount(populationSize)}
@@ -38,6 +38,6 @@ export function SimulationSummary({
         emphasis
         className="p-3 sm:p-5"
       />
-    </dl>
+    </div>
   );
 }

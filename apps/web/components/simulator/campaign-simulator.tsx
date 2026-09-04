@@ -2,6 +2,7 @@
 
 import { ApiErrorState } from "@/components/feedback/api-error-state";
 import { CapacityControl } from "@/components/simulator/capacity-control";
+import { RankingChart } from "@/components/simulator/ranking-chart";
 import { SimulationSummary } from "@/components/simulator/simulation-summary";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCampaignSimulation } from "@/lib/simulator/use-campaign-simulation";
@@ -33,6 +34,14 @@ export function CampaignSimulator() {
 
       {sim.population.status === "loading" ? (
         <Skeleton className="h-72 rounded-2xl" aria-label="Loading synthetic population" />
+      ) : null}
+
+      {sim.displayedResult ? (
+        <div className="rounded-2xl border border-border bg-card p-4 sm:p-6">
+          <RankingChart result={sim.displayedResult} pending={pending} />
+        </div>
+      ) : sim.population.status === "ready" && sim.ranking.status === "loading" ? (
+        <Skeleton className="h-80 rounded-2xl" aria-label="Scoring synthetic population" />
       ) : null}
 
       {sim.population.status === "ready" ? (

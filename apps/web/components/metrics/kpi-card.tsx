@@ -24,7 +24,7 @@ export function KpiCard({
       )}
     >
       <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{label}</p>
-      <p className="text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl">{value}</p>
+      <div className="text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl">{value}</div>
       {detail ? <p className="text-xs text-muted-foreground sm:text-sm">{detail}</p> : null}
     </div>
   );
