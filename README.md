@@ -203,17 +203,30 @@ PYTHONPATH=src:apps/api python3 -m uvicorn campaign_api.main:app --reload --port
 
 | Endpoint | Purpose |
 | --- | --- |
-| `GET /health` | Readiness and whether the model artifact is loaded |
-| `GET /metadata` | Model type, expected input schema, threshold and top-K policies |
+| `GET /health` | Liveness: the API process is up |
+| `GET /ready` | Readiness: the model artifact is loaded and inference is possible (503 otherwise) |
+| `GET /metadata` | Application version, git commit, build timestamp, model type, input schema, threshold and top-K policies |
 | `GET /metrics` | Validated metrics read from the tracked `reports/` files |
 | `POST /predict` | Score one customer: response probability and outreach priority |
 | `POST /predict/batch` | Score many customers |
 | `POST /campaign/rank` | Exact top-K ranking for a given campaign capacity |
 | `GET /demo/population` | Deterministic synthetic customers for the public demo |
 
-Errors are returned as structured JSON (`{"error": {"code", "message", "details"}}`) without tracebacks. If the artifact is missing the service starts in a degraded state and prediction endpoints return `503` with the command needed to generate it.
+Errors are returned as structured JSON (`{"error": {"code", "message", "details", "request_id"}}`) without tracebacks. Codes are a small stable contract: `VALIDATION_ERROR`, `INVALID_CAMPAIGN_CAPACITY`, `MODEL_UNAVAILABLE`, `REPORTS_UNAVAILABLE`, `INTERNAL_ERROR`. If the artifact is missing the service still starts, `/ready` reports `not_ready`, and prediction endpoints return `503` with the command needed to generate it.
 
-Configuration (see `apps/api/.env.example`): `LOAN_MODEL_PATH`, `LOAN_REPORTS_DIR`, `CORS_ALLOWED_ORIGINS`.
+Configuration (see `apps/api/.env.example`): `LOAN_MODEL_PATH`, `LOAN_REPORTS_DIR`, `CORS_ALLOWED_ORIGINS`, `LOG_LEVEL`, `APP_GIT_COMMIT`, `APP_BUILD_TIMESTAMP`.
+
+## Reliability & Operations
+
+- Structured JSON logs with service, version, event, request ID, route, status, and latency; request bodies and customer values are never logged
+- Request correlation through `X-Request-ID`, echoed on every response and embedded in every error body
+- Separate liveness (`/health`) and readiness (`/ready`) probes
+- Model artifact readiness detection with safe failure reasons (`artifact_missing`, `artifact_invalid`)
+- Consistent client-safe error contract; no tracebacks or filesystem paths leave the service
+- Frontend states for service unavailable, model not loaded, validation feedback, loading, and retry
+- Automated backend and frontend tests including failure paths
+
+Details: [docs/operations.md](docs/operations.md). Design rationale: [docs/decisions/](docs/decisions/).
 
 ## Streamlit Prototype
 
