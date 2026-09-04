@@ -1,0 +1,48 @@
+# Local production-like environment: both services built from source.
+#
+#   make train                      # once, to create artifacts/model.joblib
+#   docker compose up --build       # http://localhost:3000 (web), http://localhost:8000 (api)
+#
+# Override the public origins for other hosts:
+#   NEXT_PUBLIC_API_BASE_URL=http://192.168.1.10:8000 WEB_ORIGIN=http://192.168.1.10:3000 docker compose up --build
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      args:
+        APP_GIT_COMMIT: ${APP_GIT_COMMIT:-}
+        APP_BUILD_TIMESTAMP: ${APP_BUILD_TIMESTAMP:-}
+    image: campaign-api:local
+    environment:
+      CORS_ALLOWED_ORIGINS: ${WEB_ORIGIN:-http://localhost:3000},http://127.0.0.1:3000
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    restart: unless-stopped
+    healthcheck:
+      # Readiness, not just liveness: the web service only starts once the model is loaded.
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=2).status == 200 else 1)"]
+      interval: 15s
+      timeout: 3s
+      start_period: 20s
+      retries: 5
+
+  web:
+    build:
+      context: apps/web
+      args:
+        # Inlined into the browser bundle: must be the origin browsers can reach.
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-}
+    image: campaign-web:local
+    environment:
+      # Server components reach the API over the compose network.
+      API_BASE_URL: http://api:8000
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
