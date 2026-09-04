@@ -1,0 +1,33 @@
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Local course/source artifacts. Keep available locally, but do not publish.
+Loan_Modelling.csv
+AIML_ML_Project_Full_Code_Notebook.ipynb
+AIML_ML_Project_Full_Code_Notebook_Bhavin_Barot_Solution.ipynb
+
+# Generated model binaries. Commit only after explicit model-packaging review.
+*.joblib
+*.pkl
+*.pickle
+
+# Local environments and secrets.
+.env
+.env.*
+.venv/
+venv/
+
+# Jupyter artifacts.
+.ipynb_checkpoints/
+
+# OS/editor artifacts.
+.DS_Store
+
+# Build/cache artifacts.
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/

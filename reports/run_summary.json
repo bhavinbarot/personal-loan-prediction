@@ -1,0 +1,30 @@
+{
+  "data_path": "Loan_Modelling.csv",
+  "rows": 5000,
+  "positive_count": 480,
+  "positive_rate": 0.096,
+  "split": {
+    "train_rows": 4000,
+    "test_rows": 1000,
+    "test_size": 0.2,
+    "stratified": true,
+    "random_state": 42
+  },
+  "cv": {
+    "type": "StratifiedKFold",
+    "n_splits": 5,
+    "shuffle": true,
+    "random_state": 42
+  },
+  "primary_selection_metric": "average_precision",
+  "selected_model": "random_forest",
+  "selected_threshold_source": "5-fold out-of-fold training probabilities",
+  "selected_top_k_fraction": 0.1,
+  "selected_threshold": 0.29,
+  "outputs": {
+    "model_selection": "reports/tables/model_selection_cv.csv",
+    "final_metrics": "reports/tables/final_holdout_metrics.csv",
+    "final_campaign_metrics": "reports/tables/final_holdout_campaign_metrics.csv",
+    "final_confusion_matrix": "reports/tables/final_holdout_confusion_matrix.csv"
+  }
+}

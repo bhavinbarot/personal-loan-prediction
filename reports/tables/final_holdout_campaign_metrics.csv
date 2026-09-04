@@ -1,0 +1,4 @@
+top_k_fraction,customers_contacted,responders_captured,precision_at_k,recall_at_k,lift_at_k,number_needed_to_contact
+0.05,50,50,1.0,0.5208333333333334,10.416666666666666,1.0
+0.1,100,93,0.93,0.96875,9.6875,1.075268817204301
+0.2,200,96,0.48,1.0,5.0,2.0833333333333335
