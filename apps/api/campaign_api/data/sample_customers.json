@@ -1,0 +1,112 @@
+{
+  "generated_with": {
+    "model_type": "random_forest",
+    "artifact_version": "1.0",
+    "trained_from_commit": "7025b68c0bcbe7987481e3e759a46ba9aec77257",
+    "pool_size": 6000,
+    "pool_seed": 2026
+  },
+  "note": "Synthetic profiles selected by scoring a seeded candidate pool with the trained model. Probabilities shown in the application are always recomputed live; the stored value is a record of the selection run only.",
+  "presets": [
+    {
+      "id": "sample-customer-a",
+      "name": "Sample Customer A",
+      "features": {
+        "Age": 34,
+        "Experience": 7,
+        "Income": 98.0,
+        "CCAvg": 0.3,
+        "Mortgage": 71.0,
+        "Education": 3,
+        "Family": 3,
+        "Securities_Account": 0,
+        "CD_Account": 0,
+        "Online": 0,
+        "CreditCard": 0
+      },
+      "selection": {
+        "band": "lower",
+        "band_range": [
+          0.02,
+          0.08
+        ],
+        "model_probability_at_selection": 0.05
+      }
+    },
+    {
+      "id": "sample-customer-b",
+      "name": "Sample Customer B",
+      "features": {
+        "Age": 67,
+        "Experience": 40,
+        "Income": 54.0,
+        "CCAvg": 1.94,
+        "Mortgage": 366.0,
+        "Education": 1,
+        "Family": 1,
+        "Securities_Account": 1,
+        "CD_Account": 1,
+        "Online": 0,
+        "CreditCard": 0
+      },
+      "selection": {
+        "band": "moderate",
+        "band_range": [
+          0.2,
+          0.4
+        ],
+        "model_probability_at_selection": 0.2967
+      }
+    },
+    {
+      "id": "sample-customer-c",
+      "name": "Sample Customer C",
+      "features": {
+        "Age": 54,
+        "Experience": 32,
+        "Income": 120.0,
+        "CCAvg": 0.8,
+        "Mortgage": 185.0,
+        "Education": 2,
+        "Family": 3,
+        "Securities_Account": 0,
+        "CD_Account": 0,
+        "Online": 1,
+        "CreditCard": 1
+      },
+      "selection": {
+        "band": "higher",
+        "band_range": [
+          0.55,
+          0.75
+        ],
+        "model_probability_at_selection": 0.65
+      }
+    },
+    {
+      "id": "sample-customer-d",
+      "name": "Sample Customer D",
+      "features": {
+        "Age": 29,
+        "Experience": 6,
+        "Income": 128.0,
+        "CCAvg": 3.78,
+        "Mortgage": 0.0,
+        "Education": 3,
+        "Family": 3,
+        "Securities_Account": 0,
+        "CD_Account": 0,
+        "Online": 1,
+        "CreditCard": 1
+      },
+      "selection": {
+        "band": "very high",
+        "band_range": [
+          0.9,
+          1.0
+        ],
+        "model_probability_at_selection": 0.95
+      }
+    }
+  ]
+}

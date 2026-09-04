@@ -23,6 +23,7 @@ from campaign_api.feature_schema import FEATURE_SCHEMA
 from campaign_api.logging_config import configure_logging, log_event
 from campaign_api.model_service import ModelService
 from campaign_api.observability import RequestContextMiddleware, get_request_id
+from campaign_api.presets import load_presets
 from campaign_api.reports import load_validation_report
 from campaign_api.schemas import (
     BatchPredictRequest,
@@ -36,6 +37,7 @@ from campaign_api.schemas import (
     MetadataResponse,
     PredictRequest,
     PredictResponse,
+    PresetsResponse,
     ReadinessResponse,
 )
 
@@ -256,6 +258,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "note": DEMO_NOTE,
             "customers": [CustomerRecord.model_validate(customer) for customer in customers],
         }
+
+    @app.get("/demo/presets", response_model=PresetsResponse, tags=["demo"])
+    async def demo_presets():
+        return load_presets()
 
     return app
 

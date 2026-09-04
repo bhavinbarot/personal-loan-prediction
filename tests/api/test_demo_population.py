@@ -45,3 +45,33 @@ def test_demo_population_can_be_ranked_end_to_end(client):
     assert response.status_code == 200
     assert body["selected_count"] == 3
     assert len({row["response_probability"] for row in body["rankings"]}) > 1
+
+
+def test_demo_presets_are_neutral_schema_valid_and_outcome_free(client):
+    response = client.get("/demo/presets")
+    body = response.json()
+
+    assert response.status_code == 200
+    assert [preset["name"] for preset in body["presets"]] == [
+        "Sample Customer A",
+        "Sample Customer B",
+        "Sample Customer C",
+        "Sample Customer D",
+    ]
+    for preset in body["presets"]:
+        assert set(preset) == {"id", "name", "features"}
+        CustomerRecord.model_validate({"customer_id": preset["id"], "features": preset["features"]})
+    validate_records([preset["features"] for preset in body["presets"]])
+
+    text = response.text.lower()
+    for revealing in ("band", "probability", "high", "low", "approved", "eligible"):
+        assert revealing not in text, revealing
+
+
+def test_demo_presets_can_be_scored(client):
+    presets = client.get("/demo/presets").json()["presets"]
+
+    for preset in presets:
+        response = client.post("/predict", json={"features": preset["features"]})
+        assert response.status_code == 200, preset["name"]
+        assert 0 <= response.json()["response_probability"] <= 1

@@ -184,6 +184,17 @@ class DemoPopulationResponse(BaseModel):
     customers: list[CustomerRecord]
 
 
+class CustomerPreset(BaseModel):
+    id: str
+    name: str
+    features: CustomerFeatures
+
+
+class PresetsResponse(BaseModel):
+    note: str
+    presets: list[CustomerPreset]
+
+
 class ErrorDetail(BaseModel):
     field: str | None = None
     message: str
