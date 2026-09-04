@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 
 import { RefreshButton } from "@/components/feedback/refresh-button";
 import { PageContainer, PageHeader, Section } from "@/components/layout/page-shell";
+import { CampaignPerformanceCharts } from "@/components/validation/campaign-performance-chart";
+import { CampaignPerformanceTable } from "@/components/validation/campaign-performance-table";
 import { ConfusionMatrix } from "@/components/validation/confusion-matrix";
 import { HoldoutPerformance } from "@/components/validation/holdout-performance";
 import { ModelComparisonChart } from "@/components/validation/model-comparison-chart";
@@ -76,6 +78,18 @@ function ValidationSections({ metrics }: { metrics: MetricsResponse }) {
         description="Holdout outcomes translated into campaign terms."
       >
         <ConfusionMatrix metrics={metrics} />
+      </Section>
+
+      <Section
+        id="campaign"
+        eyebrow="Campaign performance"
+        title="Fixed-capacity outreach on the holdout set"
+        description="Exactly the top 5%, 10%, and 20% of holdout customers ranked by the model, with responder capture and lift versus random contact."
+      >
+        <CampaignPerformanceCharts rows={metrics.campaign} />
+        <div className="mt-4">
+          <CampaignPerformanceTable rows={metrics.campaign} totalResponders={metrics.dataset.holdout_responders} />
+        </div>
       </Section>
     </>
   );
