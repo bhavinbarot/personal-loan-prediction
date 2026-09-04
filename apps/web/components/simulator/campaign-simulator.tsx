@@ -1,6 +1,7 @@
 "use client";
 
 import { ApiErrorState } from "@/components/feedback/api-error-state";
+import { CampaignShortlist } from "@/components/simulator/campaign-shortlist";
 import { CapacityControl } from "@/components/simulator/capacity-control";
 import { RankingChart } from "@/components/simulator/ranking-chart";
 import { SimulationSummary } from "@/components/simulator/simulation-summary";
@@ -43,6 +44,8 @@ export function CampaignSimulator() {
       ) : sim.population.status === "ready" && sim.ranking.status === "loading" ? (
         <Skeleton className="h-80 rounded-2xl" aria-label="Scoring synthetic population" />
       ) : null}
+
+      {sim.displayedResult ? <CampaignShortlist result={sim.displayedResult} pending={pending} /> : null}
 
       {sim.population.status === "ready" ? (
         <p className="text-xs text-muted-foreground">{sim.population.note}</p>
