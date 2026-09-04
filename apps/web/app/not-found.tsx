@@ -1,7 +1,5 @@
-import Link from "next/link";
-
 import { PageContainer } from "@/components/layout/page-shell";
-import { Button } from "@/components/ui/button";
+import { LinkButton } from "@/components/ui/link-button";
 
 export default function NotFound() {
   return (
@@ -12,7 +10,7 @@ export default function NotFound() {
         The link may be outdated. Head back to the overview to continue exploring.
       </p>
       <div className="mt-6">
-        <Button render={<Link href="/" />}>Go to overview</Button>
+        <LinkButton href="/">Go to overview</LinkButton>
       </div>
     </PageContainer>
   );
