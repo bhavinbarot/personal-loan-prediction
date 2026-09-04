@@ -42,11 +42,11 @@ export async function SystemStatus() {
       {rows.map((row) => (
         <div key={row.label} className="rounded-lg border border-border px-3 py-2.5">
           <dt className="text-xs text-muted-foreground">{row.label}</dt>
-          <dd className="mt-0.5 flex items-center gap-1.5 text-sm font-medium">
+          <dd className="mt-0.5 flex items-start gap-1.5 text-sm font-medium">
             {row.ok !== null ? (
-              <span className={row.ok ? "size-2 rounded-full bg-success" : "size-2 rounded-full bg-warning"} aria-hidden />
+              <span className={row.ok ? "mt-1.5 size-2 shrink-0 rounded-full bg-success" : "mt-1.5 size-2 shrink-0 rounded-full bg-warning"} aria-hidden />
             ) : null}
-            <span className="min-w-0 truncate">{row.value}</span>
+            <span className="min-w-0 break-words">{row.value}</span>
           </dd>
         </div>
       ))}
