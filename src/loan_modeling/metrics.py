@@ -36,16 +36,43 @@ def threshold_for_top_k(y_score, k_fraction: float) -> float:
     return float(scores[cutoff_index])
 
 
+def top_k_count(n_observations: int, k_fraction: float) -> int:
+    """Convert a campaign fraction to an exact contact count using ceiling rounding."""
+    if n_observations <= 0:
+        raise ValueError("n_observations must be positive.")
+    if not 0 < k_fraction < 1:
+        raise ValueError("k_fraction must be between 0 and 1.")
+    return max(1, int(np.ceil(n_observations * k_fraction)))
+
+
+def select_top_k_mask(y_score, k_fraction: float) -> np.ndarray:
+    """Select exactly top K scores, breaking ties by stable original row order."""
+    scores = np.asarray(y_score)
+    if scores.ndim != 1:
+        raise ValueError("y_score must be one-dimensional.")
+
+    n_contact = top_k_count(len(scores), k_fraction)
+    original_order = np.arange(len(scores))
+    ranked_indices = np.lexsort((original_order, -scores))
+    selected = ranked_indices[:n_contact]
+
+    mask = np.zeros(len(scores), dtype=bool)
+    mask[selected] = True
+    return mask
+
+
 def campaign_metrics(y_true, y_score, k_values=(0.05, 0.10, 0.20)) -> pd.DataFrame:
     y_true = np.asarray(y_true)
     y_score = np.asarray(y_score)
+    if y_true.shape[0] != y_score.shape[0]:
+        raise ValueError("y_true and y_score must have the same length.")
+
     base_rate = y_true.mean()
     rows = []
-    order = np.argsort(-y_score)
 
     for k in k_values:
-        n_contact = max(1, int(np.ceil(len(y_true) * k)))
-        selected = order[:n_contact]
+        selected = select_top_k_mask(y_score, k)
+        n_contact = int(selected.sum())
         positives_found = int(y_true[selected].sum())
         precision_at_k = positives_found / n_contact
         recall_at_k = positives_found / y_true.sum()
@@ -68,4 +95,3 @@ def confusion_matrix_frame(y_true, y_score, threshold: float) -> pd.DataFrame:
     y_pred = (np.asarray(y_score) >= threshold).astype(int)
     cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
     return pd.DataFrame(cm, index=["actual_0", "actual_1"], columns=["predicted_0", "predicted_1"])
-

@@ -5,7 +5,9 @@ from loan_modeling.metrics import (
     campaign_metrics,
     classification_metrics,
     confusion_matrix_frame,
+    select_top_k_mask,
     threshold_for_top_k,
+    top_k_count,
 )
 
 
@@ -47,7 +49,7 @@ def test_threshold_for_top_k_validates_fraction():
         threshold_for_top_k([0.1, 0.2], 1.0)
 
 
-def test_threshold_cutoff_can_select_more_than_k_when_scores_tie():
+def test_threshold_policy_can_select_more_than_k_when_scores_tie():
     y_score = np.array([0.10, 0.80, 0.80, 0.80])
     threshold = threshold_for_top_k(y_score, 0.50)
 
@@ -55,6 +57,48 @@ def test_threshold_cutoff_can_select_more_than_k_when_scores_tie():
 
     assert threshold == pytest.approx(0.80)
     assert selected_by_threshold.sum() == 3
+
+
+def test_top_k_count_uses_existing_ceiling_rounding_convention():
+    assert top_k_count(1000, 0.10) == 100
+    assert top_k_count(103, 0.10) == 11
+    assert top_k_count(3, 0.10) == 1
+
+
+def test_select_top_k_mask_returns_exact_count_and_highest_scores():
+    y_score = np.array([0.10, 0.90, 0.20, 0.80, 0.30])
+
+    mask = select_top_k_mask(y_score, 0.40)
+
+    assert mask.tolist() == [False, True, False, True, False]
+    assert mask.sum() == 2
+
+
+def test_select_top_k_mask_keeps_exact_count_with_boundary_ties():
+    y_score = np.array([0.10, 0.80, 0.80, 0.80])
+
+    mask = select_top_k_mask(y_score, 0.50)
+
+    assert mask.sum() == 2
+    assert mask.tolist() == [False, True, True, False]
+
+
+def test_select_top_k_mask_tie_breaking_is_deterministic():
+    y_score = np.array([0.80, 0.80, 0.80, 0.10])
+
+    first = select_top_k_mask(y_score, 0.50)
+    second = select_top_k_mask(y_score, 0.50)
+
+    assert first.tolist() == [True, True, False, False]
+    assert np.array_equal(first, second)
+
+
+def test_select_top_k_mask_validates_inputs():
+    with pytest.raises(ValueError, match="one-dimensional"):
+        select_top_k_mask([[0.1, 0.2]], 0.50)
+
+    with pytest.raises(ValueError, match="positive"):
+        select_top_k_mask([], 0.50)
 
 
 def test_campaign_metrics_compute_exact_top_k_rows():
@@ -73,6 +117,24 @@ def test_campaign_metrics_compute_exact_top_k_rows():
     assert row["number_needed_to_contact"] == pytest.approx(1.0)
 
 
+def test_campaign_metrics_use_exact_top_k_population_when_tied():
+    y_true = np.array([0, 1, 1, 0])
+    y_score = np.array([0.10, 0.80, 0.80, 0.80])
+
+    result = campaign_metrics(y_true, y_score, k_values=(0.50,))
+    row = result.iloc[0]
+
+    assert row["customers_contacted"] == 2
+    assert row["responders_captured"] == 2
+    assert row["precision_at_k"] == pytest.approx(1.0)
+    assert row["recall_at_k"] == pytest.approx(1.0)
+
+
+def test_campaign_metrics_validate_matching_lengths():
+    with pytest.raises(ValueError, match="same length"):
+        campaign_metrics([0, 1], [0.1], k_values=(0.50,))
+
+
 def test_confusion_matrix_frame_labels_output():
     y_true = np.array([0, 0, 1, 1])
     y_score = np.array([0.20, 0.70, 0.40, 0.80])
@@ -85,4 +147,3 @@ def test_confusion_matrix_frame_labels_output():
     assert matrix.loc["actual_0", "predicted_1"] == 1
     assert matrix.loc["actual_1", "predicted_0"] == 1
     assert matrix.loc["actual_1", "predicted_1"] == 1
-
