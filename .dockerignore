@@ -1,0 +1,28 @@
+# Keep build contexts small and free of local-only material.
+.git
+.gitignore
+**/__pycache__
+**/*.py[cod]
+.pytest_cache
+.venv
+venv
+.env
+.env.*
+!.env.example
+
+# Course data and notebooks never enter an image.
+Loan_Modelling.csv
+*.ipynb
+notebooks/
+.ipynb_checkpoints
+
+# Frontend build output and dependencies are produced inside the web image.
+apps/web/node_modules
+apps/web/.next
+apps/web/out
+apps/web/coverage
+
+# Prototype and tests are not shipped.
+app/
+tests/
+docs/

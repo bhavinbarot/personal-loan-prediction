@@ -1,0 +1,11 @@
+# Runtime dependencies for the API container.
+# Model-related packages are pinned to the versions the artifact was trained with
+# (see artifacts/model_metadata.json: sklearn 1.9.0). Development tooling lives in the
+# repository-root requirements.txt.
+numpy==2.4.3
+pandas==2.3.3
+scikit-learn==1.9.0
+joblib==1.6.0
+fastapi==0.136.1
+uvicorn[standard]==0.46.0
+pydantic==2.13.3
