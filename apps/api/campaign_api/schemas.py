@@ -169,6 +169,7 @@ class ErrorBody(BaseModel):
     code: str
     message: str
     details: list[ErrorDetail] = Field(default_factory=list)
+    request_id: str
 
 
 class ErrorResponse(BaseModel):

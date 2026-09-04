@@ -21,7 +21,7 @@ from campaign_api.errors import MODEL_UNAVAILABLE_MESSAGE, ModelUnavailableError
 from campaign_api.feature_schema import FEATURE_SCHEMA
 from campaign_api.logging_config import configure_logging, log_event
 from campaign_api.model_service import ModelService
-from campaign_api.observability import RequestContextMiddleware
+from campaign_api.observability import RequestContextMiddleware, get_request_id
 from campaign_api.reports import load_validation_report
 from campaign_api.schemas import (
     BatchPredictRequest,
@@ -46,10 +46,25 @@ ERROR_RESPONSES = {
 }
 
 
+# Error codes form a small, stable contract that the frontend maps to user-facing states.
+VALIDATION_ERROR = "VALIDATION_ERROR"
+INVALID_CAMPAIGN_CAPACITY = "INVALID_CAMPAIGN_CAPACITY"
+MODEL_UNAVAILABLE = "MODEL_UNAVAILABLE"
+REPORTS_UNAVAILABLE = "REPORTS_UNAVAILABLE"
+INTERNAL_ERROR = "INTERNAL_ERROR"
+
+
 def _error(status_code: int, code: str, message: str, details: list[dict] | None = None) -> JSONResponse:
     return JSONResponse(
         status_code=status_code,
-        content={"error": {"code": code, "message": message, "details": details or []}},
+        content={
+            "error": {
+                "code": code,
+                "message": message,
+                "details": details or [],
+                "request_id": get_request_id(),
+            }
+        },
     )
 
 
@@ -105,25 +120,35 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.exception_handler(RequestValidationError)
     async def _validation_error(_: Request, exc: RequestValidationError):
-        return _error(422, "validation_error", "Request did not match the expected schema.", _format_validation_details(exc))
+        details = _format_validation_details(exc)
+        if details and all(detail["field"] == "capacity" for detail in details):
+            return _error(
+                422,
+                INVALID_CAMPAIGN_CAPACITY,
+                "Campaign capacity must be a fraction greater than 0 and less than 1 (for example 0.10 for 10%).",
+                details,
+            )
+        return _error(422, VALIDATION_ERROR, "Request did not match the expected schema.", details)
 
     @app.exception_handler(ModelUnavailableError)
     async def _model_unavailable(_: Request, __: ModelUnavailableError):
-        return _error(503, "model_unavailable", MODEL_UNAVAILABLE_MESSAGE)
+        return _error(503, MODEL_UNAVAILABLE, MODEL_UNAVAILABLE_MESSAGE)
 
     @app.exception_handler(ReportsUnavailableError)
     async def _reports_unavailable(_: Request, exc: ReportsUnavailableError):
         log_event(logger, "reports_unavailable", level=logging.ERROR, error_type=exc.__class__.__name__)
-        return _error(503, "reports_unavailable", "Validated report metrics are not available.")
+        return _error(503, REPORTS_UNAVAILABLE, "Validated report metrics are not available.")
 
     @app.exception_handler(ValueError)
     async def _value_error(_: Request, exc: ValueError):
-        # Raised by loan_modeling.predict.validate_records for schema problems that pass Pydantic.
-        return _error(422, "invalid_input", str(exc))
+        # Raised by loan_modeling.predict.validate_records for schema problems that pass Pydantic,
+        # and by request-size guards. The message is already client-safe.
+        return _error(422, VALIDATION_ERROR, str(exc))
 
     @app.exception_handler(HTTPException)
     async def _http_error(_: Request, exc: HTTPException):
-        return _error(exc.status_code, "http_error", str(exc.detail))
+        code = INTERNAL_ERROR if exc.status_code >= 500 else VALIDATION_ERROR if exc.status_code == 422 else "HTTP_ERROR"
+        return _error(exc.status_code, code, str(exc.detail))
 
     @app.exception_handler(Exception)
     async def _unhandled(request: Request, exc: Exception):
@@ -132,7 +157,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         # Log the failure type and route for diagnosis; never the request body.
         logger.error(event, exc_info=exc, extra={"event": event, "route": request.url.path, "error_type": exc.__class__.__name__})
-        return _error(500, "internal_error", "An unexpected error occurred.")
+        return _error(500, INTERNAL_ERROR, "An unexpected error occurred. Please try again.")
 
     # ---- routes ---------------------------------------------------------
 

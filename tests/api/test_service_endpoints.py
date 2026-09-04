@@ -44,7 +44,7 @@ def test_metadata_unavailable_without_model(unavailable_client):
     response = unavailable_client.get("/metadata")
 
     assert response.status_code == 503
-    assert response.json()["error"]["code"] == "model_unavailable"
+    assert response.json()["error"]["code"] == "MODEL_UNAVAILABLE"
 
 
 def test_metrics_reflect_tracked_report_files(client):
@@ -94,7 +94,7 @@ def test_metrics_unavailable_when_reports_missing(tmp_path, trained_model_path):
         response = test_client.get("/metrics")
 
     assert response.status_code == 503
-    assert response.json()["error"]["code"] == "reports_unavailable"
+    assert response.json()["error"]["code"] == "REPORTS_UNAVAILABLE"
 
 
 def test_cors_allows_only_configured_origins(client):
@@ -121,6 +121,28 @@ def test_unhandled_errors_do_not_leak_tracebacks(client, monkeypatch):
     response = client.post("/predict", json={"features": valid_features()})
 
     assert response.status_code == 500
-    assert response.json()["error"]["code"] == "internal_error"
+    assert response.json()["error"]["code"] == "INTERNAL_ERROR"
     assert "secret internal detail" not in response.text
     assert "Traceback" not in response.text
+
+
+def test_error_bodies_follow_the_shared_contract(client, unavailable_client):
+    validation = client.post("/predict", json={"features": {}}).json()["error"]
+    unavailable = unavailable_client.post("/predict", json={"features": valid_features()}).json()["error"]
+
+    for body in (validation, unavailable):
+        assert set(body) == {"code", "message", "details", "request_id"}
+        assert body["code"].isupper()
+        assert body["request_id"]
+
+    assert validation["code"] == "VALIDATION_ERROR"
+    assert unavailable["code"] == "MODEL_UNAVAILABLE"
+
+
+def test_error_request_id_matches_response_header(unavailable_client):
+    response = unavailable_client.post(
+        "/predict", json={"features": valid_features()}, headers={"X-Request-ID": "trace-contract-1"}
+    )
+
+    assert response.json()["error"]["request_id"] == "trace-contract-1"
+    assert response.headers["X-Request-ID"] == "trace-contract-1"

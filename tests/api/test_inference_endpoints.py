@@ -37,7 +37,7 @@ def test_predict_rejects_missing_feature(client):
     body = response.json()
 
     assert response.status_code == 422
-    assert body["error"]["code"] == "validation_error"
+    assert body["error"]["code"] == "VALIDATION_ERROR"
     assert any(detail["field"] == "features.Income" for detail in body["error"]["details"])
 
 
@@ -69,7 +69,7 @@ def test_predict_unavailable_when_artifact_missing(unavailable_client):
     body = response.json()
 
     assert response.status_code == 503
-    assert body["error"]["code"] == "model_unavailable"
+    assert body["error"]["code"] == "MODEL_UNAVAILABLE"
     assert "loan_modeling.train" in body["error"]["message"]
 
 
@@ -166,12 +166,14 @@ def test_campaign_rank_validates_capacity(client):
     for capacity in (0, 1, 1.5, -0.1, "ten"):
         response = client.post("/campaign/rank", json={"customers": customers, "capacity": capacity})
         assert response.status_code == 422, capacity
-        assert response.json()["error"]["code"] == "validation_error"
-        assert any(detail["field"] == "capacity" for detail in response.json()["error"]["details"])
+        body = response.json()["error"]
+        assert body["code"] == "INVALID_CAMPAIGN_CAPACITY"
+        assert "between" in body["message"] or "greater than 0" in body["message"]
+        assert any(detail["field"] == "capacity" for detail in body["details"])
 
 
 def test_campaign_rank_unavailable_when_artifact_missing(unavailable_client):
     response = unavailable_client.post("/campaign/rank", json={"customers": _population(5), "capacity": 0.2})
 
     assert response.status_code == 503
-    assert response.json()["error"]["code"] == "model_unavailable"
+    assert response.json()["error"]["code"] == "MODEL_UNAVAILABLE"
